@@ -433,7 +433,7 @@ Keterangan
 - Mengizinkan (ACCEPT) paket TCP yang masuk (INPUT) dengan tujuan port 8080.
 
 ### Hasil
-![]()
+![Alt text](<images/no 2 2.jpg>) ![Alt text](<images/no 2 1.jpg>)
 
 ## Soal 3
 > Kepala Suku North Area meminta kalian untuk membatasi DHCP dan DNS Server hanya dapat dilakukan ping oleh maksimal 3 device secara bersamaan, selebihnya akan di drop.
