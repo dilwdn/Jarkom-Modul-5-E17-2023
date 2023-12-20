@@ -376,34 +376,43 @@ ping google.com
 - Client
 
 TurkRegion
+
 ![](images/no1-client1.png)
 
 GrobeForest
+
 ![](images/no1-client2.png)
 
 LaubHills
+
 ![](images/no1-client3.png)
 
 - Router
 
 Heiter
+
 ![](images/no1-router1.png)
 
 Frieren
+
 ![](images/no1-router2.png)
 
 Himmel
+
 ![](images/no1-router3.png)
 
 Fern
+
 ![](images/no1-router4.png)
 
 - Web Server
 
 Sein
+
 ![](images/no1-webserver1.png)
 
 Stark
+
 ![](images/no1-webserver2.png)
 
 ## Soal 2
@@ -445,15 +454,19 @@ ping 10.45.0.2 -c 3
 ```
 ### Hasil
 TurkRegion
+
 ![](images/no3-client1.png)
 
 GrobeForest
+
 ![](images/no3-client2.png)
 
 LaubHills
+
 ![](images/no3-client3.png)
 
 SchwerMountain
+
 ![](images/no3-client4.png)
 
 Node SchwerMountain tidak mendapatkan paket data
@@ -486,6 +499,7 @@ nc 10.45.0.22 22
 ```
 ### Hasil
 mengkoneksikan ke salah satu web server (stark)
+
 ![](images/no4.png)
 
 test1
@@ -535,9 +549,11 @@ nmap 10.45.0.22 22
 
 ### Hasil
 Jum'at, 15 Desember 2023 09:00 
+
 ![](images/no5-test2.png)
 
 Jum'at, 15 Desember 2023 18:00
+
 ![](images/no5-test3.png)
 
 ## Soal 6
