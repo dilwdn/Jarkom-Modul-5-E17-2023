@@ -560,34 +560,122 @@ Jum'at, 15 Desember 2023 18:00
 > Lalu, karena ternyata terdapat beberapa waktu di mana network administrator dari WebServer tidak bisa stand by, sehingga perlu ditambahkan rule bahwa akses pada hari Senin - Kamis pada jam 12.00 - 13.00 dilarang (istirahat maksi cuy) dan akses di hari Jumat pada jam 11.00 - 13.00 juga dilarang (maklum, Jumatan rek).
 
 ### Script Pengerjaan
+Untuk menyelesaikan nomor 6, diperlukan rules iptables baru menggunakan syntax:
+```bash
+iptables -F
+
+iptables -A INPUT -p tcp -- dport 22 -s 10.45.4.0/22 -m time --timestart 12:00 --timestop 13:00 --weekdays Mon,Tue,Wed,Thu  -j DROP
+
+iptables -A INPUT -p tcp -- dport 22 -s 10.45.4.0/22 -m time --timestart 11:00 --timestop 13:00 --weekdays Fri -j DROP
+```
+
+Dari rules tersebut, SSH akan bekerja pada hari kerja yaitu Senin hingga kamis dan Jumat di jam tertentu.
+
 ### Hasil
-![]()
+![Alt text](<images/no 6 1.jpg>)
+![Alt text](<images/no 6 2.jpg>)
 
 ## Soal 7
 > Karena terdapat 2 WebServer, kalian diminta agar setiap client yang mengakses Sein dengan Port 80 akan didistribusikan secara bergantian pada Sein dan Stark secara berurutan dan request dari client yang mengakses Stark dengan port 443 akan didistribusikan secara bergantian pada Sein dan Stark secara berurutan.
 
 ### Script Pengerjaan
+
+Untuk menyelesaikan nomor 7, perlu mengaktifkan rules pada iptables di router yang terhubung dengan webserver yang ingin digunakan, yaitu Sein dan Stark. Berikut adalah rules iptables yang saya pakai:
+
+```bash
+iptables -t nat -F PREROUTING
+
+iptables -A PREROUTING -t nat -p tcp --dport 80 -d 10.45.4.2 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.45.4.2
+
+iptables -A PREROUTING -t nat -p tcp --dport 80 -d 10.45.4.2 -j DNAT --to-destination 10.45.0.22
+
+iptables -A PREROUTING -t nat -p tcp --dport 443 -d 10.45.0.22 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.45.0.22
+
+iptables -A PREROUTING -t nat -p tcp --dport 443 -d 10.45.0.22 -j DNAT --to-destination 10.45.4.2
+```
+
+Pada script tersebut, terdapat 4 rules untuk 2 port yang berbeda:
+- Akses menuju Sein di port 80
+	- Baris pertama: Paket akan diarahkan ke alamat tujuan 10.45.8.2 apabila paket yang menuju ke port 80 pada alamat tersebut adalah paket yang kedua.
+	- Baris kedua: Paket akan diarahkan ke alamat tujuan 10.45.0.22 apabila paket bukan paket kedua
+- Akses menuju Stark di port 443
+	- Baris ketiga: Paket akan diarahkan ke alamat tujuan 10.45.0.22 apabila paket yang menuju port 443 pada alamat tersebut adalah paket kedua
+	- Baris keempat: Paket akan diarahkan ke alamat tujuan 10.45.4.2 
+
+Kemudian dilakukan testing dengan membuka koneksi pada webserver, baik itu sein ataupun stark. Untuk port 80 menggunakan syntax ```while true; do nc -l -p 80 -c 'echo "ini sein"'; done``` di sein dan ```while true; do nc -l -p 80 -c 'echo "ini stark"'; done``` di stark. Untuk port 443 menggunakan syntax ```while true; do nc -l -p 443 -c 'echo "ini sein"'; done``` di sein dan ```while true; do nc -l -p 443 -c 'echo "ini stark"'; done``` di stark.
+
 ### Hasil
-![]()
+Berikut adalah salah satu hasil testing di port 80:
+
+![Alt text](<images/no 7 1.jpg>)
+![Alt text](<images/no 7 2.jpg>)
+![Alt text](<images/no 7 3.jpg>)
 
 ## Soal 8
 > Karena berbeda koalisi politik, maka subnet dengan masyarakat yang berada pada Revolte dilarang keras mengakses WebServer hingga masa pencoblosan pemilu kepala suku 2024 berakhir. Masa pemilu (hingga pemungutan dan penghitungan suara selesai) kepala suku bersamaan dengan masa pemilu Presiden dan Wakil Presiden Indonesia 2024.
 
 ### Script Pengerjaan
+Untuk menyelesaikan nomor 8, diperlukan penambahan rules pada webserver Sein maupun Stark dengan syntax:
+```bash
+iptables -F
+
+Subnet_Revolte="10.45.0.0/30"
+
+Mulai_Pemilu=$(date -d "2023-10-19T00:00" +"%Y-$m-$dT%H:%M")
+
+Akhir_Pemilu=$(date -d "2024-02-15T00:00" +"%Y-$m-$dT%H:%M")
+
+iptables -A INPUT -p tcp -s $Subnet_Revolte --dport 80 -m time --datestart "$Mulai_Pemilu" --datestop "$Akhir_Pemilu" -j DROP
+```
+
 ### Hasil
-![]()
+Testing dapat dilakukan dengan mengubah-ubah date sesuai yang diminta pada soal. Berikut adalah salah satu hasil testingnya:
+![Alt text](<images/no 8 2.jpg>)
 
 ## Soal 9
 > Sadar akan adanya potensial saling serang antar kubu politik, maka WebServer harus dapat secara otomatis memblokir  alamat IP yang melakukan scanning port dalam jumlah banyak (maksimal 20 scan port) di dalam selang waktu 10 menit. 
 (clue: test dengan nmap)
 
 ### Script Pengerjaan
+Untuk penyelesaian nomor 9, perlu dilakukan konfigurasi iptables pada Sein dan Stark menggunakan syntax berikut:
+```bash
+iptables -F
+
+iptables -N portscan
+
+iptables -A INPUT -m recent --name portscan --update --seconds 600 -- hitcount 20 -j DROP
+iptables -A FORWARD -m recent --name portscan --update --seconds 600 --hitcount 20 -j DROP
+
+iptables -A INPUT -m recent --name portscan --set -j ACCEPT
+iptables -A FORWARD -m recent --name portscan --set -j ACCEPT
+```
+Pada rules tersebut, terdapat informasi:
+- ```-N portscan``` : membuat chain baru yang akan digunakan untuk menyimpan informasi mengenai port yang telah di scanning
+- ```-m recent --name portscan --update --seconds 600 --hitcount 20``` : untuk scanning sebuah port diperlukan modul ```recent``` dan menerapkan aturan akan dilakukan update pada ```hitcount``` setiap 600 detik. dan jika jumlah percobaan sudah melebihi 20 kali, maka paket tersebut akan ditolak.
+
+sehingga dapat disimpulkan bahwa syntax yang berada di webserver tersebut akan mengecek terlebih dahulu apakah alamat IP tersebut berada di dalam rantai portscan dan telah melakukan 20 percobaan scanning dalam 10 menit terakhir atau tidak. Ketika ada IP yang melanggar rules tersebut, maka IP tersebut akan diblokir
+
 ### Hasil
-![]()
+![Alt text](<images/no 9 1.jpg>) ![Alt text](<images/no 9 2.jpg>)
+
+Setelah ping ke-20, ping tidak akan lagi diterima karena aturan tersebut
 
 ## Soal 10
 > Karena kepala suku ingin tau paket apa saja yang di-drop, maka di setiap node server dan router ditambahkan logging paket yang di-drop dengan standard syslog level. 
 
-### Script Pengerjaan 
+### Script Pengerjaan
+Untuk menyelesaikan nomor 10, perlu menggunakan syntax berikut di seluruh webserver dan router:
+```bash
+iptables -A INPUT  -j LOG --log-level debug --log-prefix 'Dropped Packet' -m limit --limit 1/second --limit-burst 10
+```
+
+Dalam syntax tersebut terdapat informasi:
+- ```-A INPUT``` : menambahkan rules ke chain INPUT
+- ```-j LOG``` : Menentukan bahwa jika paket tersebut memenuhi kondisi rules, maka pesan akan tercatat di log
+- ```--log-level debug``` : Menentukan level log yang akan digunakan, yaitu debug. Level log ini menunjukkan bahwa pesan log yang dihasilkan akan memeliki tingkat detail debug yang lebih rinci
+- ```--log-prefix 'Dropped Packet'``` : Menetapkan prefix atau awalan untuk setiap entri log, yaitu "Dropped Packet"
+- ```-m limit --limit 1/second --limit-burst 10``` : Mengatur batasan pada jumlahh log yang akan dicatat menggunakan modul ```limit```
+- ```--limit 1/second``` : Menetapkan batasan sebanyak 1 log per detik
+- ```--limit-burst 10``` : Menetapkan jumlah log yang dapat dilakukan dalam 1 waktu sebelum batasan per detik diambil kembali
 ### Hasil
-![]()
+![Alt text](<images/no 10 1.jpg>) ![Alt text](<images/no 10 2.jpg>) ![Alt text](<images/no 10 3.jpg>) ![Alt text](<images/no 10 4.jpg>) ![Alt text](<images/no 10 5.jpg>) ![Alt text](<images/no 10 6.jpg>) ![Alt text](<images/no 10 7.jpg>) ![Alt text](<images/no 10 8.jpg>) ![Alt text](<images/no 10 9.jpg>) ![Alt text](<images/no 10 10.jpg>) ![Alt text](<images/no 10 11.jpg>) ![Alt text](<images/no 10 12.jpg>)
