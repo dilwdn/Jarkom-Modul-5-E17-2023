@@ -245,7 +245,11 @@ route add -net 10.45.0.4 netmask 255.255.255.252 gw 10.45.0.130
 
 ## Konfigurasi DHCP
 ### Konfigurasi DHCP Server
-- 
+- Sebelum setup DHCP Server dan Relay, pastikan setiap node sudah terkoneksi dengan internet. Untuk keperluan setup, menggunakan iptables pada Aura
+```
+ETH0_IP=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to-source $ETH0_IP
+```
 
 ### Konfigurasi DHCP Relay
 
@@ -253,6 +257,7 @@ route add -net 10.45.0.4 netmask 255.255.255.252 gw 10.45.0.130
 > Agar topologi yang kalian buat dapat mengakses keluar, kalian diminta untuk mengkonfigurasi Aura menggunakan iptables, tetapi tidak ingin menggunakan MASQUERADE.
 
 ### Script Pengerjaan
+
 ### Hasil
 ![]()
 
